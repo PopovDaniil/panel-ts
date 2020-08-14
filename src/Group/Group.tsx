@@ -1,10 +1,12 @@
 import React from 'react'
-import './Group.css'
+import './Group.sass'
 
-const Group = (props: { children?: React.ReactChild, label: string, className?: string, id?:string }) => {
+const Group = (props: { children?: React.ReactChild|React.ReactChild[], label: string, className?: string, id?: string }) => {
     return (
-        <div className={`group ${props.className}`} id={props.id}>
-            {props.children}
+        <div className={`group-container ${props.className}`} id={props.id}>
+            <div className='group'>
+                {props.children}
+            </div>
             <div className="label center">{props.label}</div>
         </div>
     )
