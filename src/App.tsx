@@ -10,8 +10,16 @@ enum ComponentState {
 enum SwitchState {
   off,on
 }
-class Pantograph {
-  private val: [ComponentState, any]
+
+interface IComponent {
+  //constructor(val: ComponentState): IComponent
+  get(): ComponentState
+  set(newVal: SwitchState): void
+  toSwitch(): SwitchState
+}
+
+abstract class Component implements IComponent {
+  protected val: [ComponentState, any]
   constructor(val = 0 as ComponentState) {
     this.val = useState(val) as [ComponentState, any];
   }
@@ -24,12 +32,16 @@ class Pantograph {
       this.val[1](newVal === 1 ? ComponentState.started : ComponentState.stopped)
     }, 2000);
   }
-  toString(): string {
-    return ComponentState[this.get()]
-  }
   toSwitch(): SwitchState {
     return this.get() === 0 ? 0 : 1;
   }
+}
+
+class Pantograph extends Component{
+    toString(): string {
+    return ComponentState[this.get()]
+  }
+  
 }
 
 function App() {
