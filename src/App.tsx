@@ -21,7 +21,7 @@ interface IComponent {
 
 abstract class Component implements IComponent {
   avDelay = 0;
-  onSet(newVal: SwitchState) { }
+  onSet(newVal: number) { }
   protected val: [ComponentState, any]
   constructor(val = 0 as ComponentState) {
     this.val = useState(val) as [ComponentState, any];
@@ -31,43 +31,69 @@ abstract class Component implements IComponent {
   }
   set(newVal: SwitchState): void {
     this.val[1](ComponentState.starting);
+    this.onSet(1)
     setTimeout(() => {
-      this.val[1](newVal === 1 ? ComponentState.started : ComponentState.stopped)
-      this.onSet(newVal);
+      this.val[1](newVal === 1 ? ComponentState.started : ComponentState.stopped);
+      this.onSet(newVal === 1 ? ComponentState.started : ComponentState.stopped);
     }, this.avDelay);
   }
-  toSwitch(): SwitchState {
+    toSwitch(): SwitchState {
     return this.get() === 0 ? 0 : 1;
   }
   toString(): string {
     return ComponentState[this.get()]
   }
+  toBoolean(): boolean {
+    return this.get() === ComponentState.started;
+  }
 }
 
-
 function App() {
+
+  abstract class UpdatableComponent extends Component{
+    onSet(newVal: number) {
+      console.log(mainSwitch.toSwitch(),powerController.isPowered());
+      powerController.isPowered() ? setCurrent(25000) : setCurrent(0)
+    }
+  }
   let [current, setCurrent] = useState(0);
 
-  class Pantograph extends Component {
+  class Pantograph extends UpdatableComponent {
     readonly avDelay = 4000;
   }
 
-  class MainSwitch extends Component {
+  class MainSwitch extends UpdatableComponent {
     readonly avDelay = 1500;
-    onSet() {
-      const powered = (pantographFront.toSwitch() || pantographBack.toSwitch()) && !mainSwitch.toSwitch();
-      console.log(mainSwitch.toSwitch(),powered);
-      powered ? setCurrent(25000) : setCurrent(0)
-    }
   }
 
+  type Input = {front: Pantograph, back: Pantograph, switcher: MainSwitch};
+  class PowerController {
+    readonly curr = 25000;
+    input: Input;
+    constructor(front: Pantograph, back: Pantograph, switcher: MainSwitch) {
+      this.input = { front, back, switcher }
+    }
+    isPowered(): boolean {    
+      return (this.input.front.toBoolean() || this.input.back.toBoolean()) && this.input.switcher.toBoolean()
+    }
+    /* update(key: keyof Input, value: any): void{
+      this.input[key].set(value);
+      console.log(this.isPowered());
+      this.isPowered() ? setCurrent(this.curr) : setCurrent(0);
+    } */
+    update() {
+      this.isPowered() ? setCurrent(this.curr) : setCurrent(0);
+    }
+
+  }
   const pantographFront = new Pantograph(0);
   const pantographBack = new Pantograph(2);
   const mainSwitch = new MainSwitch(0);
+  const powerController = new PowerController(pantographFront,pantographBack,mainSwitch);
   return (
     <>
       <Group className="left" label="Токоприёмники">
-        <Switcher descrOn="Поднять" descrOff="Опустить" initVal={pantographFront.toSwitch()} label="Передний" onSwitch={pantographFront.set.bind(pantographFront)} />
+        <Switcher descrOn="Поднять" descrOff="Опустить" initVal={pantographFront.toSwitch()} label="Передний" onSwitch={() => {pantographFront.set.bind(pantographFront); powerController.update()}} />
         <Switcher descrOn="Поднять" descrOff="Опустить" initVal={pantographBack.toSwitch()} label="Задний" onSwitch={pantographBack.set.bind(pantographBack)} />
       </Group>
       <Group label="Главный выключатель" className="left">
