@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.sass';
 import Group from './Group/Group';
 import Switcher from './Switcher/Switcher';
@@ -90,10 +90,11 @@ function App() {
   const pantographBack = new Pantograph(2);
   const mainSwitch = new MainSwitch(0);
   const powerController = new PowerController(pantographFront,pantographBack,mainSwitch);
+  useEffect(powerController.update.bind(powerController))
   return (
     <>
       <Group className="left" label="Токоприёмники">
-        <Switcher descrOn="Поднять" descrOff="Опустить" initVal={pantographFront.toSwitch()} label="Передний" onSwitch={() => {pantographFront.set.bind(pantographFront); powerController.update()}} />
+        <Switcher descrOn="Поднять" descrOff="Опустить" initVal={pantographFront.toSwitch()} label="Передний" onSwitch={pantographFront.set.bind(pantographFront)} />
         <Switcher descrOn="Поднять" descrOff="Опустить" initVal={pantographBack.toSwitch()} label="Задний" onSwitch={pantographBack.set.bind(pantographBack)} />
       </Group>
       <Group label="Главный выключатель" className="left">
