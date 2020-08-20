@@ -34,7 +34,6 @@ abstract class Component implements IComponent {
     this.onSet(1)
     setTimeout(() => {
       this.val[1](newVal === 1 ? ComponentState.started : ComponentState.stopped);
-      this.onSet(newVal === 1 ? ComponentState.started : ComponentState.stopped);
     }, this.avDelay);
   }
     toSwitch(): SwitchState {
@@ -50,19 +49,13 @@ abstract class Component implements IComponent {
 
 function App() {
 
-  abstract class UpdatableComponent extends Component{
-    onSet(newVal: number) {
-      console.log(mainSwitch.toSwitch(),powerController.isPowered());
-      powerController.isPowered() ? setCurrent(25000) : setCurrent(0)
-    }
-  }
   let [current, setCurrent] = useState(0);
 
-  class Pantograph extends UpdatableComponent {
+  class Pantograph extends Component {
     readonly avDelay = 4000;
   }
 
-  class MainSwitch extends UpdatableComponent {
+  class MainSwitch extends Component {
     readonly avDelay = 1500;
   }
 
