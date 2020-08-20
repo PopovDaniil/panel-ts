@@ -1,7 +1,7 @@
 import React from 'react'
 import './Meter.sass'
 
-export default (props: { val: number, label: string, unit: string }) => {
+const Meter = (props: { val: number, label: string, unit: string }) => {
     const val = props.val >= 1000 ? props.val / 1000 : props.val
     const unit = props.val >= 1000 ? "к" + props.unit : props.unit
     return (
@@ -11,3 +11,5 @@ export default (props: { val: number, label: string, unit: string }) => {
         </div>
     )
 }
+
+export default Meter

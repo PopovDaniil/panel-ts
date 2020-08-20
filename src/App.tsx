@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import './App.sass';
 import Group from './Group/Group';
 import Switcher from './Switcher/Switcher';
@@ -6,107 +6,111 @@ import Indicator from './Indicator/Indicator';
 import Meter from './Meter/Meter'
 
 enum ComponentState {
-  stopped, starting, started
+    stopped, starting, started
 }
 enum SwitchState {
-  off, on
+    off, on
 }
 
 interface IComponent {
-  //constructor(val: ComponentState): IComponent
-  get(): ComponentState
-  set(newVal: SwitchState): void
-  toSwitch(): SwitchState
+    //constructor(val: ComponentState): IComponent
+    get(): ComponentState
+    set(newVal: SwitchState): void
+    toSwitch(): SwitchState
 }
 
 abstract class Component implements IComponent {
-  avDelay = 0;
-  onSet(newVal: number) { }
-  protected val: [ComponentState, any]
-  constructor(val = 0 as ComponentState) {
-    this.val = useState(val) as [ComponentState, any];
-  }
-  get(): ComponentState {
-    return this.val[0]
-  }
-  set(newVal: SwitchState): void {
-    this.val[1](ComponentState.starting);
-    this.onSet(1)
-    setTimeout(() => {
-      this.val[1](newVal === 1 ? ComponentState.started : ComponentState.stopped);
-      this.onSet(newVal === 1 ? ComponentState.started : ComponentState.stopped);
-    }, this.avDelay);
-  }
+    avDelay = 0;
+    onSet(newVal: number) { }
+    protected val: [ComponentState, any]
+    constructor(val = 0 as ComponentState) {
+        this.val = useState(val) as [ComponentState, any];
+    }
+    get(): ComponentState {
+        return this.val[0]
+    }
+    set(newVal: SwitchState): void {
+        this.val[1](ComponentState.starting);
+        this.onSet(1)
+        setTimeout(() => {
+            this.val[1](newVal === 1 ? ComponentState.started : ComponentState.stopped);
+            this.onSet(newVal);
+        }, this.avDelay);
+    }
     toSwitch(): SwitchState {
-    return this.get() === 0 ? 0 : 1;
-  }
-  toString(): string {
-    return ComponentState[this.get()]
-  }
-  toBoolean(): boolean {
-    return this.get() === ComponentState.started;
-  }
+        return this.get() === 0 ? 0 : 1;
+    }
+    toString(): string {
+        return ComponentState[this.get()]
+    }
+    toBoolean(): boolean {
+        return this.get() === ComponentState.started;
+    }
 }
 
 function App() {
 
-  abstract class UpdatableComponent extends Component{
-    onSet(newVal: number) {
-      console.log(mainSwitch.toSwitch(),powerController.isPowered());
-      powerController.isPowered() ? setCurrent(25000) : setCurrent(0)
-    }
-  }
-  let [current, setCurrent] = useState(0);
+     function PowerController() {
+        const [current, setCurrent] = useState(0);
+        const [front, setFront] = useState(ComponentState.stopped);
+        const [back, setBack] = useState(ComponentState.started);
+        const [mainSwitch, setMainSwitch] = useState(ComponentState.stopped);
 
-  class Pantograph extends UpdatableComponent {
-    readonly avDelay = 4000;
-  }
+        function changeFront(val: SwitchState) {
+            setFront(ComponentState.starting)
+            setTimeout(() => {
+                setFront(toComponentState(val));
+            }, 4000);
+        }
+        function changeBack(val: SwitchState) {
+            setBack(ComponentState.starting)
+            setTimeout(() => {
+                setBack(toComponentState(val));
+            }, 4000);
+        }
+        function changeMain(val: SwitchState) {
+            setMainSwitch(ComponentState.starting)
+            setTimeout(() => {
+                setMainSwitch(toComponentState(val));
+            }, 1500);
+        }
+        useEffect(changeCurrent);
+        function changeCurrent() {
+            (front === ComponentState.started || back === ComponentState.started) && mainSwitch === ComponentState.started ? setCurrent(25000) : setCurrent(0);
+        }
+        function toSwitchState(state: ComponentState): SwitchState {
+            return state === ComponentState.started ? SwitchState.on : SwitchState.off;
+        }
 
-  class MainSwitch extends UpdatableComponent {
-    readonly avDelay = 1500;
-  }
+        function toComponentState(state: SwitchState): ComponentState {
+            return state === SwitchState.on ? ComponentState.started : ComponentState.stopped;
+        }
 
-  type Input = {front: Pantograph, back: Pantograph, switcher: MainSwitch};
-  class PowerController {
-    readonly curr = 25000;
-    input: Input;
-    constructor(front: Pantograph, back: Pantograph, switcher: MainSwitch) {
-      this.input = { front, back, switcher }
-    }
-    isPowered(): boolean {    
-      return (this.input.front.toBoolean() || this.input.back.toBoolean()) && this.input.switcher.toBoolean()
-    }
-    /* update(key: keyof Input, value: any): void{
-      this.input[key].set(value);
-      console.log(this.isPowered());
-      this.isPowered() ? setCurrent(this.curr) : setCurrent(0);
-    } */
-    update() {
-      this.isPowered() ? setCurrent(this.curr) : setCurrent(0);
+        function toString(state: ComponentState): string {
+            return ComponentState[state]
+        }
+        return (
+            <>
+                <Group className="left" label="Токоприёмники">
+                    <Switcher descrOn="Поднять" descrOff="Опустить" initVal={toSwitchState(front)} label="Передний" onSwitch={changeFront} />
+                    <Switcher descrOn="Поднять" descrOff="Опустить" initVal={toSwitchState(back)} label="Задний" onSwitch={changeBack} />
+                </Group>
+                <Group label="Главный выключатель" className="left">
+                    <Switcher descrOn="Замкнут" descrOff="Разомкнут" initVal={0} label="ГВ" onSwitch={changeMain} />
+                </Group>
+                <Group label="Питание" className="right" id="indicators">
+                    <Indicator val={toString(front)} label="Передний" />
+                    <Indicator val={toString(back)} label="Задний" />
+                    <Indicator val={toString(mainSwitch)} label="ГВ" />
+                    <Meter label="Напряжение" val={current} unit="В" />
+                </Group>
+            </>
+        )
     }
 
-  }
-  const pantographFront = new Pantograph(0);
-  const pantographBack = new Pantograph(2);
-  const mainSwitch = new MainSwitch(0);
-  const powerController = new PowerController(pantographFront,pantographBack,mainSwitch);
-  return (
-    <>
-      <Group className="left" label="Токоприёмники">
-        <Switcher descrOn="Поднять" descrOff="Опустить" initVal={pantographFront.toSwitch()} label="Передний" onSwitch={() => {pantographFront.set.bind(pantographFront); powerController.update()}} />
-        <Switcher descrOn="Поднять" descrOff="Опустить" initVal={pantographBack.toSwitch()} label="Задний" onSwitch={pantographBack.set.bind(pantographBack)} />
-      </Group>
-      <Group label="Главный выключатель" className="left">
-        <Switcher descrOn="Замкнут" descrOff="Разомкнут" initVal={0} label="ГВ" onSwitch={mainSwitch.set.bind(mainSwitch)} />
-      </Group>
-      <Group label="Питание" className="right" id="indicators">
-        <Indicator val={pantographFront.toString()} label="Передний" />
-        <Indicator val={pantographBack.toString()} label="Задний" />
-        <Indicator val={mainSwitch.toString()} label="ГВ" />
-        <Meter label="Напряжение" val={current} unit="В" />
-      </Group>
-    </>
-  );
+    return (
+        <PowerController />
+    );
 }
 
 export default App;
