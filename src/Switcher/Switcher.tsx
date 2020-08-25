@@ -9,7 +9,7 @@ function Switcher(props: {descrOn: string, descrOff: string, label?: string, ini
     const click = () => {
         const newState = state === 1 ? 0 : 1;
         setState(newState);
-        props.onSwitch && props.onSwitch(newState);
+        props?.onSwitch(newState);
     }
     return (
         <div className="switcher">
