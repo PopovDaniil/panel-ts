@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.sass';
 import Group from './Group/Group';
 import Switcher from './Switcher/Switcher';
@@ -60,13 +60,6 @@ function App() {
             return reverser.val === ReverserState.off;
         }
     }
-
-    const [current, setCurrent] = useState(0);
-    const [amperage, setAmperage] = useState(0);
-    const [power, setPower] = useState(0);
-    const [speed, setSpeed] = useState(0);
-    const [acceleration, setAcceleration] = useState([0,new Date().getTime()]);
-
     class Pantograph extends LockedByReverser {
         readonly avDelay = 4000;
     }
@@ -103,8 +96,16 @@ function App() {
         }
     }
     class PowerHandle extends Handle<PowerHandleState> {
-        isLocked() {return reverser.val === ReverserState.off}
+        isLocked() { return reverser.val === ReverserState.off }
     }
+
+    const mass = 84 * 1000;
+    const [current, setCurrent] = useState(0);
+    const [amperage, setAmperage] = useState(0);
+    const [power, setPower] = useState(0);
+    const [speed, setSpeed] = useState(0);
+    const [acceleration, setAcceleration] = useState([0, new Date().getTime()]);
+    const accRef = useRef(acceleration);
 
     type Input = { front: Pantograph, back: Pantograph, switcher: MainSwitch };
     class PowerController {
@@ -123,15 +124,15 @@ function App() {
     }
 
     class ElectricMotor extends Component {
-        isLocked() {return false}
+        isLocked() { return (reverser.val === ReverserState.neutral) || (reverser.val === ReverserState.off) }
         power: number;
         setPower: Function;
-        constructor(val?:number) {
+        constructor(val?: number) {
             super(val);
-            [this.power,this.setPower] = useState(0);
+            [this.power, this.setPower] = useState(0);
         }
         update() {
-            this.setPower(current*amperage);
+            this.setPower(1340 * amperage);
         }
     }
     const pantographFront = new Pantograph(ComponentState.stopped);
@@ -140,34 +141,38 @@ function App() {
     const powerController = new PowerController(pantographFront, pantographBack, mainSwitch);
     const reverser = new Reverser(ReverserState.off);
     const powerHandle = new PowerHandle(0);
-    const engines = [1,2,3,4,5,6].map(() => new ElectricMotor());    
+    const engines = [1, 2, 3, 4, 5, 6].map(() => new ElectricMotor());
 
     useEffect(powerController.update.bind(powerController));
-    useEffect(engines.forEach.bind(engines,val => val.update()),[powerHandle]);
+    useEffect(engines.forEach.bind(engines, val => val.update()), [powerHandle]);
 
-    useEffect(()=> {
-        let epower = 0;        
+    useEffect(() => {
+        let epower = 0;
         engines.forEach(val => {
             epower += val.power;
         });
         setPower(epower);
-    }, [powerHandle,engines]) 
+    }, [powerHandle, engines])
 
     useEffect(() => {
-        setAmperage(powerHandle.val*10);
-    },[powerHandle])
+        setAmperage(powerHandle.val * 1.5);
+    }, [powerHandle])
 
     useEffect(() => {
-        setAcceleration([power/100,new Date().getTime()]);
-    },[power])
+        const friction = speed === 0 ? 0 : 0.001
+        setAcceleration([(power / mass)-friction, new Date().getTime()]);
+    }, [power,mass,speed])
 
-    useEffect(() => {
-        setTimeout(() => {
-            const time = (new Date().getTime() - acceleration[1])/1000;
-            console.log(time);
-            setSpeed(oldSpeed => acceleration[0]*time+oldSpeed);
-        }, 100);  
-    },[power,acceleration])
+    accRef.current = acceleration;
+    useEffect(() => {    
+        const int = setInterval(() => {
+            const time = (new Date().getTime() - accRef.current[1]) / 1000;
+            console.log(accRef.current);
+            setSpeed(oldSpeed => accRef.current[0] * time + oldSpeed);
+        },100)
+        return () => clearInterval(int)
+    },[])
+
     return (
         <>
             <Group className="left" label="Токоприёмники">
@@ -185,13 +190,14 @@ function App() {
                     <Meter label="Напряжение" val={current} unit="В" />
                 </Group>
                 <Group label="Ход">
-                    <Meter val={reverser.toString()} fontSize={20}/>
-                    <Meter val={powerHandle.val} fontSize={20}/>
-                    <Meter val={speed} fontSize={20} unit="км/ч"/>
+                    <Meter val={reverser.toString()} fontSize={20} />
+                    <Meter val={powerHandle.val} fontSize={20} />
+                    <Meter val={speed} fontSize={20} unit="км/ч" prec={2}/>
+                    <Meter val={acceleration[0]} fontSize={20} unit="км/ч" prec={2}/>
                 </Group>
                 <Group label="ТЭД">
-                    <Meter val={amperage} label="Сила тока" unit="А"/>
-                    <Meter val={power} label="Мощность" unit="Вт"/>
+                    <Meter val={amperage} label="Сила тока" unit="А" />
+                    <Meter val={power} label="Мощность" unit="Вт" />
                 </Group>
             </div>
             <Group label="Реверсор" className="left">
