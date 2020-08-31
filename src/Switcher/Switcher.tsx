@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import './Switcher.css'
+import './Switcher.sass'
 
-function Switcher(props: {descrOn: string, descrOff: string, label: string, initVal:0|1, onSwitch: (state: 0|1) => void}) {
+function Switcher(props: {descrOn: string, descrOff: string, label?: string, initVal:0|1, onSwitch: (state: 0|1) => void}) {
     const [state, setState] = useState(props.initVal);
     /**
      * @param {Event} e 
@@ -9,7 +9,7 @@ function Switcher(props: {descrOn: string, descrOff: string, label: string, init
     const click = () => {
         const newState = state === 1 ? 0 : 1;
         setState(newState);
-        props.onSwitch && props.onSwitch(newState);
+        props?.onSwitch(newState);
     }
     return (
         <div className="switcher">

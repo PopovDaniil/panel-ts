@@ -1,12 +1,12 @@
 import React from 'react'
-import './Indicator.css'
+import './Indicator.sass'
 
-const Indicator = (props: {val: string, label?: string}) => {
+const Indicator = (props: {val: string, label?: string, size?:string}) => {
     return (
-        <React.Fragment>
-            <div className={`indicator ${props.val}`}/>
-            <div className="label">{props.label}</div>
-        </React.Fragment>
+        <div className="flex-column">
+            <div className={`indicator ${props.val} ${props.size ? props.size : "small"}`}/>
+            <div className="label small">{props.label}</div>
+        </div>
     )
 }
 

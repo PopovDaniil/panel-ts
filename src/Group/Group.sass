@@ -1,0 +1,16 @@
+%flex-container 
+  display: flex
+  flex-wrap: wrap
+  align-self: center
+    
+.group-container
+    @extend %flex-container
+    margin: 10px
+    padding: 10px
+    border: 2px outset #000
+    background-color: #bbb
+    flex-direction: column
+    >.label
+        align-self: center
+.group
+    @extend %flex-container

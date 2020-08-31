@@ -1,0 +1,30 @@
+%flex-column 
+  display: flex
+  flex-direction: column
+  align-items: center
+
+.switcher
+    @extend %flex-column
+    min-height: 100px
+    min-width: 70px
+    border: 1px solid gray
+    background-color: #fff
+
+.case
+    outline: 1px solid lightgray
+    width: 3px
+    min-height: 40px
+    margin: 0 auto
+
+.handle
+    position: absolute
+    background-color: black
+    width: 20px
+    height: 10px
+    transition: ease-in-out 0.5s
+
+.on
+    transform: translate(-45%,-2px)
+
+.off
+    transform: translate(-45%,35px)
