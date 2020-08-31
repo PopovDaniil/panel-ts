@@ -132,9 +132,10 @@ function App() {
             [this.power, this.setPower] = useState(0);
         }
         update() {
-            this.setPower(1340 * amperage);
+            this.setPower(current * amperage);
         }
     }
+
     const pantographFront = new Pantograph(ComponentState.stopped);
     const pantographBack = new Pantograph(ComponentState.started);
     const mainSwitch = new MainSwitch(ComponentState.stopped);
@@ -159,7 +160,7 @@ function App() {
     }, [powerHandle])
 
     useEffect(() => {
-        const friction = speed === 0 ? 0 : 0.001
+        const friction = speed === 0 ? 0 : 0.01
         setAcceleration([(power / mass)-friction, new Date().getTime()]);
     }, [power,mass,speed])
 
@@ -167,7 +168,6 @@ function App() {
     useEffect(() => {    
         const int = setInterval(() => {
             const time = (new Date().getTime() - accRef.current[1]) / 1000;
-            console.log(accRef.current);
             setSpeed(oldSpeed => accRef.current[0] * time + oldSpeed);
         },100)
         return () => clearInterval(int)
